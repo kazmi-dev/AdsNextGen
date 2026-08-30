@@ -19,9 +19,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
     }
 }
 
 rootProject.name = "AdsNextGen"
 include(":app")
- 
+include(":AdsNextGen")
