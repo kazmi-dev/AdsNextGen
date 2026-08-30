@@ -3,9 +3,11 @@ package com.kazmi.dev.nextgenadscore.adsNextGen
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.RatingBar
 import android.widget.TextView
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
@@ -104,39 +106,84 @@ class NativeAdManager(private val context: Context) {
             NativeSize.FULL -> R.layout.native_ad_full
         }
 
-        val adView = LayoutInflater.from(context).inflate(layoutId, null) as NativeAdView
-        populateNativeAdView(ad, adView)
-        
-        container.removeAllViews()
-        container.addView(adView)
+        try {
+            val adView = LayoutInflater.from(context).inflate(layoutId, null) as NativeAdView
+            populateNativeAdView(ad, adView)
+            
+            container.removeAllViews()
+            container.addView(adView)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inflating native ad layout: ${e.message}")
+        }
     }
 
     private fun populateNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
+        // Headline
         adView.findViewById<TextView>(R.id.ad_headline)?.let {
             it.text = nativeAd.headline
             adView.headlineView = it
         }
 
+        // Body
         adView.findViewById<TextView>(R.id.ad_body)?.let {
             it.text = nativeAd.body
+            it.visibility = if (nativeAd.body != null) View.VISIBLE else View.INVISIBLE
             adView.bodyView = it
         }
 
+        // Call to Action
         adView.findViewById<Button>(R.id.ad_call_to_action)?.let {
             it.text = nativeAd.callToAction
+            it.visibility = if (nativeAd.callToAction != null) View.VISIBLE else View.INVISIBLE
             adView.callToActionView = it
         }
 
+        // App Icon
         adView.findViewById<ImageView>(R.id.ad_app_icon)?.let {
             it.setImageDrawable(nativeAd.icon?.drawable)
+            it.visibility = if (nativeAd.icon != null) View.VISIBLE else View.GONE
             adView.iconView = it
         }
 
+        // Price
+        adView.findViewById<TextView>(R.id.ad_price)?.let {
+            it.text = nativeAd.price
+            it.visibility = if (nativeAd.price != null) View.VISIBLE else View.GONE
+            adView.priceView = it
+        }
+
+        // Store
+        adView.findViewById<TextView>(R.id.ad_store)?.let {
+            it.text = nativeAd.store
+            it.visibility = if (nativeAd.store != null) View.VISIBLE else View.GONE
+            adView.storeView = it
+        }
+
+        // Advertiser
+        adView.findViewById<TextView>(R.id.ad_advertiser)?.let {
+            it.text = nativeAd.advertiser
+            it.visibility = if (nativeAd.advertiser != null) View.VISIBLE else View.GONE
+            adView.advertiserView = it
+        }
+
+        // Rating
+        adView.findViewById<RatingBar>(R.id.ad_stars)?.let {
+            if (nativeAd.starRating != null) {
+                it.rating = nativeAd.starRating!!.toFloat()
+                it.visibility = View.VISIBLE
+            } else {
+                it.visibility = View.GONE
+            }
+            adView.starRatingView = it
+        }
+
+        // Media View
         val mediaView = adView.findViewById<MediaView>(R.id.ad_media)
         if (mediaView != null) {
             mediaView.mediaContent = nativeAd.mediaContent
         }
         
+        // Register ad with view and media view
         adView.registerNativeAd(nativeAd, mediaView)
     }
 
