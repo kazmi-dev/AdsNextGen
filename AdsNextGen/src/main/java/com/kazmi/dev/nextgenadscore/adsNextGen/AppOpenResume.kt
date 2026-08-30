@@ -24,10 +24,11 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class AppOpenResume(
     application: Application,
-    private val adUnitId: String = "ca-app-pub-3940256099942544/9257395915",
+    adUnitId: String? = null,
     private val onAdEvent: ((AdEvent) -> Unit)? = null
 ) : Application.ActivityLifecycleCallbacks, LifecycleEventObserver {
 
+    private val finalAdUnitId = adUnitId ?: AdsSettings.appOpenId
     private var appOpenAd: AppOpenAd? = null
     private var isAdLoading: Boolean = false
     private var isAdShowing: Boolean = false
@@ -52,7 +53,7 @@ class AppOpenResume(
 
         val result = withTimeoutOrNull(duration.milliseconds) {
             suspendCancellableCoroutine { cont ->
-                val adRequest = AdRequest.Builder(adUnitId).build()
+                val adRequest = AdRequest.Builder(finalAdUnitId).build()
                 AppOpenAd.load(
                     adRequest,
                     object : AdLoadCallback<AppOpenAd> {

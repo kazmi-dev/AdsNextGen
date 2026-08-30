@@ -23,10 +23,12 @@ object RewardedAdManager {
 
     suspend fun loadRewardedAdWithTimeOut(
         activity: Activity,
-        adUnitId: String = "ca-app-pub-3940256099942544/5224354917",
+        adUnitId: String? = null,
         duration: Long = 8000,
         onAdEvent: (AdEvent) -> Unit
     ) {
+        val finalAdUnitId = adUnitId ?: AdsSettings.rewardedId
+
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE)
             return
@@ -43,7 +45,7 @@ object RewardedAdManager {
 
         val result = withTimeoutOrNull(duration.milliseconds) {
             suspendCancellableCoroutine { cont ->
-                val adRequest = AdRequest.Builder(adUnitId).build()
+                val adRequest = AdRequest.Builder(finalAdUnitId).build()
 
                 RewardedAd.load(
                     adRequest,

@@ -3,19 +3,18 @@
 A lightweight, easy-to-use Android library for integrating Google Mobile Ads (NextGen SDK) with built-in support for multiple ad formats, internet connectivity checks, and simplified lifecycle management.
 
 ## Features
-- **All-in-one Ad Management**: Support for Banner, Interstitial, Rewarded, Rewarded Interstitial, and App Open ads.
+- **All-in-one Ad Management**: Support for **Banner**, **Interstitial**, **Native**, **Rewarded**, **Rewarded Interstitial**, and **App Open** ads.
 - **Unified Callbacks**: Monitor ad events (Loaded, Showed, Clicked, Paid, Rewarded, etc.) using a single enum.
 - **Internet Awareness**: Automatically checks for connectivity before attempting to load ads.
 - **Purchase Support**: Easily disable all ads globally for pro users.
-- **Test Mode**: Built-in test ad unit IDs for easy development.
-- **NextGen SDK**: Built on top of the latest Google Android Libraries for Ads.
+- **Global Ad IDs**: Set your Ad Unit IDs once and use them everywhere.
+- **GDPR & Initialization**: Fast, optimized consent gathering and one-time SDK initialization.
 
 ## Installation
 
 ### 1. Add the JitPack repository to your settings.gradle.kts
 ```kotlin
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
@@ -33,27 +32,37 @@ dependencies {
 
 ## Usage
 
-### 1. Initialization (Splash Screen)
-In your Splash screen, call `initConsentInfo`. This handles GDPR consent and initializes the SDK. Once `onInitializationComplete` is called, you can navigate to the next screen.
+### 1. Global Configuration (Highly Recommended)
+Set your production Ad Unit IDs and purchase status globally. This allows you to call ads without passing IDs every time.
+
+```kotlin
+// Disable ads for pro users
+AdsSettings.isAppPurchased = true 
+
+// Set production IDs (Defaults are AdMob test IDs)
+AdsSettings.bannerId = "your_banner_id"
+AdsSettings.interstitialId = "your_interstitial_id"
+AdsSettings.nativeId = "your_native_id"
+AdsSettings.rewardedId = "your_rewarded_id"
+AdsSettings.rewardedInterstitialId = "your_rewarded_inter_id"
+AdsSettings.appOpenId = "your_app_open_id"
+```
+
+### 2. Initialization (Splash Screen)
+Call `initConsentInfo` in your Splash screen. This handles GDPR consent and initializes the SDK + App Open Resume.
 
 ```kotlin
 GoogleConsentManager.initConsentInfo(
     activity = this,
     admobAppId = getString(R.string.admob_app_id),
-    resumeAdUnitId = "your_app_open_id",
-    debugMode = BuildConfig.DEBUG, // Set true to test GDPR forms
+    // resumeAdUnitId = "optional_override_id", 
+    debugMode = BuildConfig.DEBUG,
     onInitializationComplete = {
-        // Move to the next activity
+        // Safe to navigate
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 )
-```
-
-### 2. Global Configuration
-Set the purchase status to disable ads globally:
-```kotlin
-AdsSettings.isAppPurchased = true // Default is false
 ```
 
 ### 3. Banner Ads
@@ -61,14 +70,10 @@ AdsSettings.isAppPurchased = true // Default is false
 BannerAdManager.showBannerAd(
     adViewContainer = binding.bannerContainer,
     activity = this,
-    adUnitId = "your_ad_unit_id", // Optional: defaults to test ID
+    // adUnitId = "optional_override_id",
     adSize = BannerAdManager.BannerAdSize.ADAPTIVE,
     onAdEvent = { event ->
-        when(event) {
-            AdEvent.LOADED -> // Ad loaded
-            AdEvent.FAILED_TO_LOAD -> // Handle failure
-            // ...
-        }
+        // Handle events
     }
 )
 ```
@@ -78,12 +83,10 @@ BannerAdManager.showBannerAd(
 lifecycleScope.launch {
     InterstitialAdManager.loadInterstitialAdWithTimeOut(
         activity = this,
-        adUnitId = "your_ad_unit_id", // Optional: defaults to test ID
+        // adUnitId = "optional_override_id",
         onAdEvent = { event ->
-            when(event) {
-                AdEvent.DISMISSED -> // Proceed to next screen
-                AdEvent.FAILED_TO_LOAD -> // Handle failure
-                // ...
+            if (event == AdEvent.DISMISSED || event == AdEvent.FAILED_TO_LOAD) {
+                moveNext()
             }
         }
     )
@@ -94,17 +97,27 @@ lifecycleScope.launch {
 ```kotlin
 val nativeAdManager = NativeAdManager(context)
 nativeAdManager.loadNativeAd(
-    adUnitId = "your_ad_unit_id",
+    // adUnitId = "optional_override_id",
     onAdEvent = { event, ad ->
         if (event == AdEvent.LOADED) {
-            // Show using default medium layout
             nativeAdManager.showNativeAd(binding.adContainer, NativeAdManager.NativeSize.MEDIUM)
-            
-            // OR show using your own custom layout
-            // nativeAdManager.showNativeAd(binding.adContainer, layoutResId = R.layout.my_custom_native_layout)
         }
     }
 )
+```
+
+### 6. Rewarded Ads
+```kotlin
+lifecycleScope.launch {
+    RewardedAdManager.loadRewardedAdWithTimeOut(
+        activity = this,
+        onAdEvent = { event ->
+            if (event == AdEvent.REWARDED) {
+                // Grant reward!
+            }
+        }
+    )
+}
 ```
 
 ## License

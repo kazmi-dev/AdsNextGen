@@ -34,13 +34,15 @@ object BannerAdManager {
     fun showBannerAd(
         adViewContainer: FrameLayout,
         activity: Activity,
-        adUnitId: String = "ca-app-pub-3940256099942544/6300978111",
+        adUnitId: String? = null,
         adSize: BannerAdSize = BannerAdSize.ADAPTIVE,
         customWidth: Int = 0,
         customHeight: Int = 0,
         collapsibleType: CollapsibleType = CollapsibleType.NONE,
         onAdEvent: (AdEvent) -> Unit
     ) {
+        val finalAdUnitId = adUnitId ?: AdsSettings.bannerId
+
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE)
             return
@@ -58,7 +60,7 @@ object BannerAdManager {
 
         loadBannerAd(
             activity,
-            adUnitId,
+            finalAdUnitId,
             adSize,
             customWidth,
             customHeight,

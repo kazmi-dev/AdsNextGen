@@ -50,7 +50,7 @@ object GoogleConsentManager {
      * 
      * @param activity The current activity.
      * @param admobAppId Your AdMob App ID.
-     * @param resumeAdUnitId Ad Unit ID for App Open ads on resume.
+     * @param resumeAdUnitId Ad Unit ID for App Open ads on resume. If null, uses AdsSettings.appOpenId.
      * @param debugMode Set to true to enable debug geography (EEA).
      * @param testDeviceHashedId Your device's hashed ID for UMP debug mode.
      * @param onInitializationComplete Callback triggered when the app is ready to navigate.
@@ -58,7 +58,7 @@ object GoogleConsentManager {
     fun initConsentInfo(
         activity: Activity,
         admobAppId: String,
-        resumeAdUnitId: String,
+        resumeAdUnitId: String? = null,
         debugMode: Boolean = false,
         testDeviceHashedId: String? = null,
         onInitializationComplete: () -> Unit
@@ -88,14 +88,11 @@ object GoogleConsentManager {
                     if (consentInfo.canRequestAds()) {
                         initializeAds(activity.application, admobAppId, resumeAdUnitId, onInitializationComplete)
                     } else {
-                        // If we still can't request ads, we should still call the complete callback 
-                        // so the user isn't stuck on the splash screen.
                         onInitializationComplete()
                     }
                 }
             },
             { error ->
-                // On update failure, if we already have consent from a previous session, init ads.
                 if (consentInfo.canRequestAds()) {
                     initializeAds(activity.application, admobAppId, resumeAdUnitId, onInitializationComplete)
                 } else {
@@ -108,10 +105,9 @@ object GoogleConsentManager {
     private fun initializeAds(
         application: Application,
         admobAppId: String,
-        resumeAdUnitId: String,
+        resumeAdUnitId: String?,
         onComplete: () -> Unit,
     ) {
-        // Ensure initialize is only called once per app session
         if (isMobileAdsInitializeCalled.getAndSet(true)) {
             onComplete()
             return

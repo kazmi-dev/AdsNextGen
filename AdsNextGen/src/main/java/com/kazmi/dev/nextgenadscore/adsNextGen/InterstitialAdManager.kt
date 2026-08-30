@@ -23,10 +23,12 @@ object InterstitialAdManager {
 
     suspend fun loadInterstitialAdWithTimeOut(
         activity: Activity,
-        adUnitId: String = "ca-app-pub-3940256099942544/1033173712",
+        adUnitId: String? = null,
         duration: Long = 8000,
         onAdEvent: (AdEvent) -> Unit
     ) {
+        val finalAdUnitId = adUnitId ?: AdsSettings.interstitialId
+
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE)
             return
@@ -43,7 +45,7 @@ object InterstitialAdManager {
 
         val result = withTimeoutOrNull(duration.milliseconds) {
             suspendCancellableCoroutine { cont ->
-                val adRequest = AdRequest.Builder(adUnitId).build()
+                val adRequest = AdRequest.Builder(finalAdUnitId).build()
 
                 InterstitialAd.load(
                     adRequest,
@@ -119,6 +121,5 @@ object InterstitialAdManager {
         ad.show(activity)
     }
 
-    // Temporary placeholder for compatibility with previous logic if needed, otherwise ignore.
     private fun onDismiss() {}
 }

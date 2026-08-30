@@ -3,7 +3,6 @@ package com.kazmi.dev.nextgenadscore.adsNextGen
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -32,9 +31,11 @@ class NativeAdManager(private val context: Context) {
     }
 
     fun loadNativeAd(
-        adUnitId: String = "ca-app-pub-3940256099942544/2247696110",
+        adUnitId: String? = null,
         onAdEvent: (AdEvent, NativeAd?) -> Unit
     ) {
+        val finalAdUnitId = adUnitId ?: AdsSettings.nativeId
+
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE, null)
             return
@@ -46,7 +47,7 @@ class NativeAdManager(private val context: Context) {
         }
 
         isAdLoading = true
-        val adRequest = NativeAdRequest.Builder(adUnitId, listOf(NativeAd.NativeAdType.NATIVE)).build()
+        val adRequest = NativeAdRequest.Builder(finalAdUnitId, listOf(NativeAd.NativeAdType.NATIVE)).build()
 
         NativeAdLoader.load(
             adRequest,
@@ -111,7 +112,6 @@ class NativeAdManager(private val context: Context) {
     }
 
     private fun populateNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
-        // Set the text views
         adView.findViewById<TextView>(R.id.ad_headline)?.let {
             it.text = nativeAd.headline
             adView.headlineView = it
@@ -127,19 +127,16 @@ class NativeAdManager(private val context: Context) {
             adView.callToActionView = it
         }
 
-        // Set the icon view
         adView.findViewById<ImageView>(R.id.ad_app_icon)?.let {
             it.setImageDrawable(nativeAd.icon?.drawable)
             adView.iconView = it
         }
 
-        // Set the media view
         val mediaView = adView.findViewById<MediaView>(R.id.ad_media)
         if (mediaView != null) {
             mediaView.mediaContent = nativeAd.mediaContent
         }
         
-        // In NextGen SDK, we register the native ad with the view and media view
         adView.registerNativeAd(nativeAd, mediaView)
     }
 

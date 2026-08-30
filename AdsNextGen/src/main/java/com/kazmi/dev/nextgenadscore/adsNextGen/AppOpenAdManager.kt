@@ -21,10 +21,12 @@ object AppOpenAdManager {
 
     suspend fun loadAppOpenAdWithTimeOut(
         activity: Activity,
-        adUnitId: String = "ca-app-pub-3940256099942544/9257395915",
+        adUnitId: String? = null,
         duration: Long = 8000,
         onAdEvent: (AdEvent) -> Unit
     ) {
+        val finalAdUnitId = adUnitId ?: AdsSettings.appOpenId
+
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE)
             return
@@ -41,7 +43,7 @@ object AppOpenAdManager {
 
         val result = withTimeoutOrNull(duration.milliseconds) {
             suspendCancellableCoroutine { cont ->
-                val adRequest = AdRequest.Builder(adUnitId).build()
+                val adRequest = AdRequest.Builder(finalAdUnitId).build()
                 AppOpenAd.load(
                     adRequest,
                     object : AdLoadCallback<AppOpenAd> {
@@ -67,7 +69,7 @@ object AppOpenAdManager {
             showAppOpenAd(activity, onAdEvent)
         } else {
             isAdLoading = false
-            if (result == null) onAdEvent(AdEvent.FAILED_TO_LOAD) // Timeout
+            if (result == null) onAdEvent(AdEvent.FAILED_TO_LOAD)
         }
     }
 
