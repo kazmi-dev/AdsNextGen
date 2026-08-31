@@ -42,11 +42,23 @@ dependencies {
 afterEvaluate {
     publishing {
         publications {
-            create<MavenPublication>("release") {
+            register<MavenPublication>("release") {
                 from(components["release"])
+
                 groupId = "com.github.kazmi-dev"
-                artifactId = "adsnextgen-core"
-                version = "1.0.0"
+                artifactId = "ads-nextgen"     // Name of your library
+                version = "1.0.2"             // Version to publish
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                // Replace YOUR_REPO_NAME with your actual repository name
+                url = uri("https://maven.pkg.github.com/kazmi-dev/AdsNextGen")
+                credentials {
+                    username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                    password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+                }
             }
         }
     }
