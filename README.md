@@ -12,13 +12,19 @@ A lightweight, easy-to-use Android library for integrating Google Mobile Ads (Ne
 
 ## Installation
 
-### 1. Add the JitPack repository to your settings.gradle.kts
+### 1. Add the GitHub Packages repository to your settings.gradle.kts
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
+        maven {
+            url = uri("https://maven.pkg.github.com/kazmi-dev/AdsNextGen")
+            credentials {
+                username = "YOUR_GITHUB_USERNAME"
+                password = "YOUR_GITHUB_TOKEN" // Classic PAT with read:packages scope
+            }
+        }
     }
 }
 ```
@@ -26,7 +32,7 @@ dependencyResolutionManagement {
 ### 2. Add the dependency to your build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.kazmi-dev:AdsNextGen:1.0.0")
+    implementation("com.github.kazmi-dev:ads-nextgen:1.0.3")
 }
 ```
 
