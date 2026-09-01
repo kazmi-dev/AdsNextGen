@@ -13,6 +13,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.kazmi.dev.nextgenadscore.adsNextGen.userConsent.GoogleConsentManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,6 +47,11 @@ class AppOpenResume(
             onAdEvent?.invoke(AdEvent.SKIPPED_DUE_TO_PURCHASE)
             return
         }
+
+        if (!GoogleConsentManager.canRequestAds(activity)) {
+            return
+        }
+
         if (isAdLoading || isAdShowing) return
         if (!NetworkObserver.isConnected(activity)) return
 

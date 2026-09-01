@@ -16,6 +16,7 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.kazmi.dev.nextgenadscore.adsNextGen.userConsent.GoogleConsentManager
 
 object BannerAdManager {
 
@@ -45,6 +46,11 @@ object BannerAdManager {
 
         if (AdsSettings.isAppPurchased) {
             onAdEvent(AdEvent.SKIPPED_DUE_TO_PURCHASE)
+            return
+        }
+
+        if (!GoogleConsentManager.canRequestAds(activity)) {
+            onAdEvent(AdEvent.FAILED_TO_LOAD)
             return
         }
 

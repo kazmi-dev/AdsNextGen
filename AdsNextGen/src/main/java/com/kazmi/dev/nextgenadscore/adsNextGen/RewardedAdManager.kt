@@ -8,6 +8,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
+import com.kazmi.dev.nextgenadscore.adsNextGen.userConsent.GoogleConsentManager
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
@@ -34,12 +35,17 @@ object RewardedAdManager {
             return
         }
 
-        if (isAdLoading) return
+        if (!GoogleConsentManager.canRequestAds(activity)) {
+            onAdEvent(AdEvent.FAILED_TO_LOAD)
+            return
+        }
 
         if (!NetworkObserver.isConnected(activity)) {
             onAdEvent(AdEvent.FAILED_TO_LOAD)
             return
         }
+
+        if (isAdLoading) return
 
         isAdLoading = true
 

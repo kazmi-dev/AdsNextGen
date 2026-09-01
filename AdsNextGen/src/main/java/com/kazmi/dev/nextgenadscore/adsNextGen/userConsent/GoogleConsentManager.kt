@@ -1,30 +1,27 @@
 package com.kazmi.dev.nextgenadscore.adsNextGen.userConsent
 
 import android.app.Activity
-import android.app.Application
 import android.util.Log
-import com.google.android.libraries.ads.mobile.sdk.MobileAds
-import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration
-import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig
 import com.google.android.ump.ConsentDebugSettings
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
-import com.kazmi.dev.nextgenadscore.adsNextGen.AppOpenResume
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicBoolean
+import com.kazmi.dev.nextgenadscore.adsNextGen.AdMobInitializer
 
 object GoogleConsentManager {
 
     private const val TAG = "GoogleConsentManager"
-
     private lateinit var consentInfo: ConsentInformation
-    private val isMobileAdsInitializeCalled = AtomicBoolean(false)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Returns true if ads can be requested based on the current consent status.
+     */
+    fun canRequestAds(activity: Activity): Boolean {
+        if (!::consentInfo.isInitialized) {
+            consentInfo = UserMessagingPlatform.getConsentInformation(activity)
+        }
+        return consentInfo.canRequestAds()
+    }
 
     /**
      * Returns true if the privacy options form is required.
@@ -38,30 +35,24 @@ object GoogleConsentManager {
     /**
      * Resets consent state (useful for testing).
      */
-    fun resetConsent() {
-        if (::consentInfo.isInitialized) {
-            consentInfo.reset()
+    fun resetConsent(activity: Activity) {
+        if (!::consentInfo.isInitialized) {
+            consentInfo = UserMessagingPlatform.getConsentInformation(activity)
         }
+        consentInfo.reset()
     }
 
     /**
-     * Initializes consent gathering and SDK initialization.
-     * Use this in your Splash Screen.
-     * 
-     * @param activity The current activity.
-     * @param admobAppId Your AdMob App ID.
-     * @param resumeAdUnitId Ad Unit ID for App Open ads on resume. If null, uses AdsSettings.appOpenId.
-     * @param debugMode Set to true to enable debug geography (EEA).
-     * @param testDeviceHashedId Your device's hashed ID for UMP debug mode.
-     * @param onInitializationComplete Callback triggered when the app is ready to navigate.
+     * Optimized flow: Checks if ads can be requested immediately after info update,
+     * potentially initializing ads in parallel with the consent form.
      */
-    fun initConsentInfo(
+    fun initConsentAndAds(
         activity: Activity,
         admobAppId: String,
         resumeAdUnitId: String? = null,
         debugMode: Boolean = false,
         testDeviceHashedId: String? = null,
-        onInitializationComplete: () -> Unit
+        onAdsInitialized: () -> Unit = {}
     ) {
         consentInfo = UserMessagingPlatform.getConsentInformation(activity)
 
@@ -69,64 +60,43 @@ object GoogleConsentManager {
         if (debugMode) {
             val debugSettingsBuilder = ConsentDebugSettings.Builder(activity)
                 .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
-            
-            testDeviceHashedId?.let {
-                debugSettingsBuilder.addTestDeviceHashedId(it)
-            }
-            
+            testDeviceHashedId?.let { debugSettingsBuilder.addTestDeviceHashedId(it) }
             paramsBuilder.setConsentDebugSettings(debugSettingsBuilder.build())
         }
 
-        val consentRequestParameters = paramsBuilder.build()
-
         consentInfo.requestConsentInfoUpdate(
             activity,
-            consentRequestParameters,
+            paramsBuilder.build(),
             {
+                // Parallel Check: If we already have consent/no consent needed, init ads now.
+                if (consentInfo.canRequestAds()) {
+                    AdMobInitializer.initialize(activity.application, admobAppId, resumeAdUnitId, onAdsInitialized)
+                }
+
+                // Show form if required.
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
-                    // Trigger initialization if we can request ads (even if there was a form error)
+                    if (formError != null) {
+                        Log.e(TAG, "Consent form error: ${formError.message}")
+                    }
+                    
+                    // Final Check: If form changed status to 'can request ads', init ads.
                     if (consentInfo.canRequestAds()) {
-                        initializeAds(activity.application, admobAppId, resumeAdUnitId, onInitializationComplete)
+                        AdMobInitializer.initialize(activity.application, admobAppId, resumeAdUnitId, onAdsInitialized)
                     } else {
-                        onInitializationComplete()
+                        // User might have denied consent. Trigger callback to let app proceed.
+                        onAdsInitialized()
                     }
                 }
             },
             { error ->
+                Log.e(TAG, "Consent info update error: ${error.message}")
                 if (consentInfo.canRequestAds()) {
-                    initializeAds(activity.application, admobAppId, resumeAdUnitId, onInitializationComplete)
+                    AdMobInitializer.initialize(activity.application, admobAppId, resumeAdUnitId, onAdsInitialized)
                 } else {
-                    onInitializationComplete()
+                    onAdsInitialized()
                 }
             }
         )
-    }
-
-    private fun initializeAds(
-        application: Application,
-        admobAppId: String,
-        resumeAdUnitId: String?,
-        onComplete: () -> Unit,
-    ) {
-        if (isMobileAdsInitializeCalled.getAndSet(true)) {
-            onComplete()
-            return
-        }
-
-        scope.launch(Dispatchers.IO) {
-            val requestConfiguration = RequestConfiguration.Builder().build()
-            MobileAds.setRequestConfiguration(requestConfiguration)
-
-            val appId = InitializationConfig.Builder(admobAppId).build()
-            MobileAds.initialize(application, appId) {
-                // Initialize App Open on Resume
-                AppOpenResume(application, resumeAdUnitId)
-            }
-            
-            withContext(Dispatchers.Main) {
-                onComplete()
-            }
-        }
     }
 
     /**

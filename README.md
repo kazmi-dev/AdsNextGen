@@ -49,20 +49,34 @@ AdsSettings.appOpenId = "your_app_open_id"
 ```
 
 ### 2. Initialization (Splash Screen)
-Call `initConsentInfo` in your Splash screen. This handles GDPR consent and initializes the SDK + App Open Resume.
+You can use the helper method to handle both consent and initialization, or call them separately for more control.
 
+#### Option A: Combined Initialization (Recommended)
 ```kotlin
-GoogleConsentManager.initConsentInfo(
+GoogleConsentManager.initConsentAndAds(
     activity = this,
     admobAppId = getString(R.string.admob_app_id),
     // resumeAdUnitId = "optional_override_id", 
     debugMode = BuildConfig.DEBUG,
-    onInitializationComplete = {
+    onAdsInitialized = {
         // Safe to navigate
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 )
+```
+
+#### Option B: Separate Logic
+```kotlin
+// 1. Gather Consent
+GoogleConsentManager.gatherConsent(this, BuildConfig.DEBUG) { canRequestAds ->
+    if (canRequestAds) {
+        // 2. Initialize Ads
+        GoogleConsentManager.initializeMobileAds(application, "your_app_id") {
+            // SDK Ready
+        }
+    }
+}
 ```
 
 ### 3. Banner Ads
