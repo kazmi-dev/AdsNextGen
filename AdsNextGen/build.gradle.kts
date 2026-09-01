@@ -47,7 +47,7 @@ afterEvaluate {
 
                 groupId = "com.github.kazmi-dev"
                 artifactId = "ads-nextgen"     // Name of your library
-                version = "1.0.2"             // Version to publish
+                version = "1.0.3"             // Version to publish
             }
         }
         repositories {
