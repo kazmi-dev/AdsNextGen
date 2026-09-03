@@ -26,7 +26,7 @@ dependencyResolutionManagement {
 ### 2. Add the dependency to your build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.kazmi-dev:AdsNextGen:1.0.0")
+    implementation("com.github.kazmi-dev:ads-nextgen:1.0.5")
 }
 ```
 
